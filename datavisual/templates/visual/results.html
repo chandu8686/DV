@@ -1,0 +1,25 @@
+
+{% load static %}
+{% load get_item %}
+
+{% block content %}
+  <h2>Results</h2>
+  <table>
+    <thead>
+      <tr>
+        {% for header in headers %}
+          <th>{{ header }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in data %}
+        <tr>
+          {% for i in headers %}
+            <td>{{ row|get_item:i }}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

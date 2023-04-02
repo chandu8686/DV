@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSV Visualizations</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>Data and Visualizations</h1>
+
+    <div>
+        <h2>Data</h2>
+        <table>
+            {% for row in data %}
+            <tr>
+                {% for value in row %}
+                <td>{{ value }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div>
+        <h2>Visualizations</h2>
+        <div id="visualization-1"></div>
+        <div id="visualization-2"></div>
+        <!-- Add more visualization divs as needed -->
+    </div>
+
+    <script>
+        // Visualization 1
+        var trace1 = {
+            x: {{ visualization_data_1.x|safe }},
+            y: {{ visualization_data_1.y|safe }},
+            type: '{{ visualization_type_1 }}'
+        };
+        var data1 = [trace1];
+        Plotly.newPlot('visualization-1', data1);
+
+        // Visualization 2
+        var trace2 = {
+            x: {{ visualization_data_2.x|safe }},
+            y: {{ visualization_data_2.y|safe }},
+            type: '{{ visualization_type_2 }}'
+        };
+        var data2 = [trace2];
+        Plotly.newPlot('visualization-2', data2);
+
+        // Add more visualizations as needed
+    </script>
+</body>
+</html>
