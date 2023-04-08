@@ -10,6 +10,13 @@ import csv
 
 ###
 import plotly.graph_objs as go
+import io
+import base64
+
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 def visual(request):
     x = np.array([1, 2, 3, 4, 5])
@@ -24,43 +31,80 @@ def visual(request):
 
 #visual/templates/
 
-def show_visualization(request):
-    if request.method == 'POST':
-        file = request.FILES['csv_file']
-        if not file.name.endswith('.csv'):
-            return HttpResponse('This is not a CSV file')
+# def show_visualizations(request):
+#     if request.method == 'POST':
+#         filename = request.POST.get('filename')
+#         fs = FileSystemStorage(LOCATION='visual/data/')
+#         with fs.open(filename, 'r') as csvfile:
+#             reader = csv.DictReader(csvfile)
+#             data = [row for row in reader]
 
-        fs = FileSystemStorage(location='visual/data/')
-        filename = fs.save(file.name, file)
-        uploaded_file_url = fs.url(filename)
+#         # create scatter plot
+#         x_values = [float(row['x']) for row in data]
+#         y_values = [float(row['y']) for row in data]
+#         plt.scatter(x_values, y_values)
+#         plt.xlabel('X')
+#         plt.ylabel('Y')
+#         scatter_plot = get_image()
 
-        # Process the CSV data
-        with open('visual/data/' + filename, 'r') as csvfile:
-            data = csv.reader(csvfile)
-            rows = []
-            for row in data:
-                rows.append(row)
+#         # create bar chart
+#         categories = [row['category'] for row in data]
+#         counts = {}
+#         for category in categories:
+#             if category in counts:
+#                 counts[category] += 1
+#             else:
+#                 counts[category] = 1
+#         labels = list(counts.keys())
+#         values = list(counts.values())
+#         plt.bar(labels, values)
+#         plt.xlabel('Category')
+#         plt.ylabel('Count')
+#         bar_chart = get_image()
 
-        # Create the Plotly chart
-        with open('visual/data/' + filename, 'r') as csvfile:
-            data = csv.reader(csvfile)
-            x_data = []
-            y_data = []
-            for row in data:
-                x_data.append(row[0])
-                y_data.append(row[1])
+#         # create heatmap
+#         x_values = [float(row['x']) for row in data]
+#         y_values = [float(row['y']) for row in data]
+#         heatmap, xedges, yedges = np.histogram2d(x_values, y_values, bins=10)
+#         extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+#         plt.clf()
+#         plt.imshow(heatmap.T, extent=extent, origin='lower')
+#         plt.xlabel('X')
+#         plt.ylabel('Y')
+#         heatmap_plot = get_image()
 
-        fig = go.Figure(
-            data=[go.Scatter(x=x_data, y=y_data, mode='markers')]
-        )
+#         # create line plot
+#         x_values = [row['timestamp'] for row in data]
+#         y_values = [float(row['value']) for row in data]
+#         plt.plot(x_values, y_values)
+#         plt.xlabel('Timestamp')
+#         plt.ylabel('Value')
+#         line_plot = get_image()
 
-        # Render the chart and the CSV data in a template
-        div = fig.to_html(full_html=False)
+#         # create box plot
+#         data_values = [float(row['value']) for row in data]
+#         plt.boxplot(data_values)
+#         plt.ylabel('Value')
+#         box_plot = get_image()
 
-        return render(request, 'visual/visualization.html', {'graph': div, 'rows': rows})
+#         context = {
+#             'scatter_plot': scatter_plot,
+#             'bar_chart': bar_chart,
+#             'heatmap_plot': heatmap_plot,
+#             'line_plot': line_plot,
+#             'box_plot': box_plot,
+#             'data': data
+#         }
+#         return render(request, 'visualization.html', context)
 
-    return render(request, 'visual/upload.html')
+#     return render(request, 'visual/results.html')
 
+
+def get_image():
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    plt.clf()
+    image_base64 = base
 
 
 
@@ -76,13 +120,80 @@ def process_csv(file):
 def upload_csv(request):
     if request.method == 'POST':
         file = request.FILES['csv_file']
+        lo=file
         if not file.name.endswith('.csv'):
             messages.error(request, 'This is not a CSV file')
             return HttpResponseRedirect(reverse('upload'))
+        
 
         data, headers = process_csv(file)
 
-        return render(request, 'visual/results.html', {'data': data, 'headers': headers})
+        #file_text = file.read().decode('utf-8').splitlines()
+
+        fs = FileSystemStorage(location='visual/data/')
+        filename = fs.save(file.name, file)
+        uploaded_file_url = fs.url(filename)
+
+        data = pd.read_csv(file)
+        headers = list(data.columns)
+
+        # Generate the visualizations
+        line_plot = False
+        bar_plot = False
+        pie_chart = False
+        scatter_plot = False
+        if len(headers) >= 2:
+            # Line Plot
+            try:
+                plt.plot(data[headers[0]], data[headers[1]])
+                plt.xlabel(headers[0])
+                plt.ylabel(headers[1])
+                plt.title('Line Plot')
+                plt.savefig('static/visual/line_plot.png')
+                line_plot = True
+            except:
+                pass
+
+            # Bar Plot
+            try:
+                plt.bar(data[headers[0]], data[headers[1]])
+                plt.xlabel(headers[0])
+                plt.ylabel(headers[1])
+                plt.title('Bar Plot')
+                plt.savefig('static/visual/bar_plot.png')
+                bar_plot = True
+            except:
+                pass
+
+            # Pie Chart
+            try:
+                plt.pie(data[headers[1]], labels=data[headers[0]])
+                plt.title('Pie Chart')
+                plt.savefig('static/visual/pie_chart.png')
+                pie_chart = True
+            except:
+                pass
+
+            # Scatter Plot
+            try:
+                sns.scatterplot(data=data, x=headers[0], y=headers[1])
+                plt.title('Scatter Plot')
+                plt.savefig('static/visual/scatter_plot.png')
+                scatter_plot = True
+            except:
+                pass
+
+        return render(request, 'visualization.html', {
+            'uploaded_file_url': uploaded_file_url,
+            'headers': headers,
+            'line_plot': line_plot,
+            'bar_plot': bar_plot,
+            'pie_chart': pie_chart,
+            'scatter_plot': scatter_plot
+        })
+
+
+       # return render(request, 'visual/results.html', {'data': data, 'headers': headers})
 
     return render(request, 'visual/upload.html')
 
